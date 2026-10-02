@@ -1,0 +1,11 @@
+[functions.ai-schedule]
+verify_jwt = true
+entrypoint = "./functions/ai-schedule/index.ts"
+
+[functions.ai-parse-pdf]
+verify_jwt = true
+entrypoint = "./functions/ai-parse-pdf/index.ts"
+
+[functions.whatsapp-send]
+verify_jwt = true
+entrypoint = "./functions/whatsapp-send/index.ts"
