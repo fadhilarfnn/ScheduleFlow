@@ -70,12 +70,13 @@ export default function PdfParserPage() {
         new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       const response = await fetch(`${supabaseUrl}/functions/v1/ai-parse-pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${anonKey}`,
         },
         body: JSON.stringify({
           pdf_base64: base64,
