@@ -152,13 +152,15 @@ export function TaskDialog({
     setAiSuggestion(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       const response = await fetch(`${supabaseUrl}/functions/v1/ai-schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${anonKey}`,
+          Authorization: session?.access_token ? `Bearer ${session.access_token}` : `Bearer ${anonKey}`,
+          apikey: anonKey,
         },
         body: JSON.stringify({
           task_title: title,
