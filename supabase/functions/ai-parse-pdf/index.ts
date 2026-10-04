@@ -188,6 +188,16 @@ Return JSON: {"events": [{"title":"...","description":"...","location":"...","da
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } else {
+      // Fallback: try regex extraction on PDF text if no AI key is configured
+      extractedText = extractTextFromPdf(pdfBytes);
+      const fallbackEvents = parseScheduleFromText(extractedText);
+
+      if (fallbackEvents.length > 0) {
+        return new Response(JSON.stringify({ events: fallbackEvents }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       return new Response(
         JSON.stringify({
           error: "No AI API key configured. Set GEMINI_API_KEY or GROQ_API_KEY in Supabase secrets.",
@@ -238,4 +248,55 @@ function extractTextFromPdf(bytes: Uint8Array): string {
   }
 
   return texts.join("\n");
+}
+
+function parseScheduleFromText(text: string): any[] {
+  const events: any[] = [];
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+
+  const dayMap: Record<string, string> = {
+    senin: "Monday", monday: "Monday",
+    selasa: "Tuesday", tuesday: "Tuesday",
+    rabu: "Wednesday", wednesday: "Wednesday",
+    kamis: "Thursday", thursday: "Thursday",
+    jumat: "Friday", friday: "Friday",
+    sabtu: "Saturday", saturday: "Saturday",
+    minggu: "Sunday", sunday: "Sunday",
+  };
+
+  let currentDay = "Monday";
+  const timeRegex = /(\d{1,2})[:.](\d{2})\s*[-–—s\/d]+\s*(\d{1,2})[:.](\d{2})/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lower = line.toLowerCase();
+
+    for (const [key, dayName] of Object.entries(dayMap)) {
+      if (lower.includes(key)) {
+        currentDay = dayName;
+        break;
+      }
+    }
+
+    const timeMatch = line.match(timeRegex);
+    if (timeMatch) {
+      const startH = timeMatch[1].padStart(2, "0");
+      const startM = timeMatch[2];
+      const endH = timeMatch[3].padStart(2, "0");
+      const endM = timeMatch[4];
+
+      const title = lines[i - 1] && lines[i - 1].length > 3 ? lines[i - 1] : "Mata Kuliah";
+      events.push({
+        title,
+        description: "Auto-extracted schedule",
+        location: "",
+        day_of_week: currentDay,
+        start_time: `${startH}:${startM}`,
+        end_time: `${endH}:${endM}`,
+        recurrence_until: null,
+      });
+    }
+  }
+
+  return events;
 }
